@@ -32,7 +32,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-[1280px] items-center gap-2 px-3 py-3">
 
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="FreshBasket home">
@@ -45,30 +45,26 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        {/* Location */}
+        {/* Location - desktop only */}
         <button type="button" className="hidden shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:border-primary md:flex">
           <MapPin className="h-4 w-4 text-primary" />
           <div className="flex flex-col items-start leading-tight">
             <span className="text-[11px] text-muted-foreground">Deliver to</span>
-            <select
-               value={city}
-               onChange={e => setCity(e.target.value)}
-               className="bg-transparent font-medium text-sm outline-none cursor-pointer"
->
-               <option>560001, Bengaluru</option>
-               <option>400001, Mumbai</option>
-               <option>110001, Delhi</option>
-               <option>600001, Chennai</option>
-               <option>500001, Hyderabad</option>
-               <option>411001, Pune</option>
-               <option>380001, Ahmedabad</option>
-               <option>700001, Kolkata</option>
-               <option>302001, Jaipur</option>
-               <option>226001, Lucknow</option>
-               <option>416001, Kolhapur</option>
+            <select value={city} onChange={e => setCity(e.target.value)}
+              className="bg-transparent font-medium text-sm outline-none cursor-pointer">
+              <option>560001, Bengaluru</option>
+              <option>400001, Mumbai</option>
+              <option>110001, Delhi</option>
+              <option>600001, Chennai</option>
+              <option>500001, Hyderabad</option>
+              <option>411001, Pune</option>
+              <option>380001, Ahmedabad</option>
+              <option>700001, Kolkata</option>
+              <option>302001, Jaipur</option>
+              <option>226001, Lucknow</option>
+              <option>416001, Kolhapur</option>
             </select>
           </div>
-          
         </button>
 
         {/* Search */}
@@ -84,42 +80,45 @@ export function SiteHeader() {
           />
         </form>
 
-        {/* Nav */}
+        {/* Nav - desktop only */}
         <nav className="hidden items-center gap-1 lg:flex">
           <Button asChild variant="ghost" size="sm"><Link href="/fruits">Fruits</Link></Button>
           <Button asChild variant="ghost" size="sm"><Link href="/vegetables">Vegetables</Link></Button>
           <Button asChild variant="ghost" size="sm" className="text-primary"><Link href="/subscriptions">Subscriptions</Link></Button>
         </nav>
 
-        {/* Login / Profile */}
+        {/* Login / Profile - visible on ALL screens */}
         {mounted && user ? (
-          <div className="hidden items-center gap-2 md:flex" suppressHydrationWarning>
+          <div className="flex items-center gap-1" suppressHydrationWarning>
             {user.role === "admin" && (
-              <Button asChild variant="ghost" size="sm" className="text-primary font-bold">
+              <Button asChild variant="ghost" size="sm" className="text-primary font-bold hidden sm:flex">
                 <Link href="/admin">Admin</Link>
               </Button>
             )}
-            <Button asChild variant="ghost" className="gap-2">
+            <Button asChild variant="ghost" size="sm" className="gap-1 px-2">
               <Link href="/profile">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="max-w-[80px] truncate text-sm">{user.name.split(" ")[0]}</span>
+                <span className="hidden sm:block max-w-[60px] truncate text-sm">{user.name.split(" ")[0]}</span>
               </Link>
             </Button>
             <button onClick={() => { logout(); router.push("/") }}
-              className="rounded-md p-2 text-muted-foreground hover:text-red-500 transition-colors" title="Logout">
+              className="rounded-md p-1.5 text-muted-foreground hover:text-red-500 transition-colors" title="Logout">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          <Button asChild variant="ghost" className="hidden items-center gap-2 md:flex">
-            <Link href="/login"><User className="h-4 w-4" />Login</Link>
+          <Button asChild variant="ghost" size="sm" className="flex items-center gap-1 px-2">
+            <Link href="/login">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:block">Login</span>
+            </Link>
           </Button>
         )}
 
         {/* Cart */}
-        <Button asChild className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button asChild className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 px-3">
           <Link href="/cart" aria-label={`Basket with ${displayQuantity} items`}>
             <ShoppingCart className="h-4 w-4" />
             <span className="hidden flex-col items-start leading-tight sm:flex">
