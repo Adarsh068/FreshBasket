@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FilterSidebar, PRICE_BANDS, type CategoryOption, type Filters } from "@/components/filter-sidebar"
 import { ProductGrid, sortProducts, type SortOption } from "@/components/product-grid"
 import type { Product } from "@/lib/products"
@@ -16,6 +16,10 @@ export function CategoryPage({
 }) {
   const [filters, setFilters] = useState<Filters>({ categories: [], priceBands: [], minDiscount: null })
   const [sort, setSort] = useState<SortOption>("Popularity")
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" })
+  }, [])
 
   const filtered = useMemo(() => {
     const passes = products.filter((p) => {

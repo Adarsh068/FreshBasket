@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CheckCircle2, CreditCard } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
+import { buildOrderFromCart, saveOrder } from "@/lib/store"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 
@@ -16,6 +17,10 @@ export function CheckoutView() {
   const [submitting, setSubmitting] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [payment, setPayment] = useState<PaymentMethod>("cod")
+
+  useEffect(() => {
+    if (orderId) window.scrollTo({ top: 0, behavior: "auto" })
+  }, [orderId])
 
   const deliveryFee = subtotal >= 499 ? 0 : 29
   const total = subtotal + deliveryFee
@@ -64,45 +69,67 @@ export function CheckoutView() {
     )
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (submitting) return
     setSubmitting(true)
     const form = e.currentTarget
     const fd = new FormData(form)
 
-    setTimeout(async () => {
-      const orderPayload = {
-        customerName: String(fd.get("name") || ""),
-        phone: String(fd.get("phone") || ""),
-        address: String(fd.get("address") || ""),
-        city: String(fd.get("city") || ""),
-        pincode: String(fd.get("pincode") || ""),
-        payment,
-        subtotal,
-        deliveryFee,
-        total: subtotal + deliveryFee,
-        status: "placed",
-        items: items.map((it) => ({
-          id: it.product.id,
-          name: it.product.name,
-          image: it.product.image,
-          price: it.product.price,
-          quantity: it.quantity,
-          weight: it.product.weight,
-        })),
-      }
-      try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" }
-        if (user?.token) headers["Authorization"] = `Bearer ${user.token}`
-        const res = await fetch(`${API}/orders`, { method: "POST", headers, body: JSON.stringify(orderPayload) })
+    const orderPayload = {
+      customerName: String(fd.get("name") || ""),
+      phone: String(fd.get("phone") || ""),
+      address: String(fd.get("address") || ""),
+      city: String(fd.get("city") || ""),
+      pincode: String(fd.get("pincode") || ""),
+      payment,
+      subtotal,
+      deliveryFee,
+      total: subtotal + deliveryFee,
+      status: "placed",
+      items: items.map((it) => ({
+        id: it.product.id,
+        name: it.product.name,
+        image: it.product.image,
+        price: it.product.price,
+        quantity: it.quantity,
+        weight: it.product.weight,
+      })),
+    }
+
+    const localOrder = buildOrderFromCart({
+      cartItems: items,
+      subtotal,
+      deliveryFee,
+      customerName: orderPayload.customerName,
+      phone: orderPayload.phone,
+      address: orderPayload.address,
+      city: orderPayload.city,
+      pincode: orderPayload.pincode,
+      payment,
+    })
+    saveOrder(localOrder)
+
+    let confirmedOrderId = localOrder.id
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (user?.token) headers["Authorization"] = `Bearer ${user.token}`
+      const res = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(orderPayload),
+      })
+      if (res.ok) {
         const data = await res.json()
-        setOrderId(data.orderId || "FB" + Math.random().toString(36).slice(2, 8).toUpperCase())
-      } catch {
-        setOrderId("FB" + Math.random().toString(36).slice(2, 8).toUpperCase())
+        if (data?.orderId) confirmedOrderId = data.orderId
       }
-      clear()
-      setSubmitting(false)
-    }, 800)
+    } catch (error) {
+      console.error("Order API unavailable; order saved locally:", error)
+    }
+
+    setOrderId(confirmedOrderId)
+    clear()
+    setSubmitting(false)
   }
 
   return (

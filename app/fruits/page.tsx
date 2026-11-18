@@ -33,7 +33,7 @@ export default function FruitsPage() {
         ctaHref="#products"
         image="/colorful-assortment-fresh-fruits-banner.jpg"
       />
-      <div id="products">
+      <div id="products" className="scroll-mt-[88px]">
         <CategoryPage title="Fresh Fruits" products={products} categoryOptions={categoryOptions} />
       </div>
       <SiteFooter />
