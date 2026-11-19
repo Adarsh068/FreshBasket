@@ -1,0 +1,93 @@
+[
+  {
+    "customerName": "Smoke Test",
+    "phone": "9876543210",
+    "address": "Test Address",
+    "city": "Bengaluru",
+    "pincode": "560001",
+    "payment": "cod",
+    "items": [
+      {
+        "id": "apple-royal-gala",
+        "name": "Apple",
+        "price": 199,
+        "quantity": 1,
+        "weight": "4 pcs"
+      }
+    ],
+    "subtotal": 199,
+    "deliveryFee": 40,
+    "total": 239,
+    "orderId": "FB50N6QZ",
+    "userEmail": null,
+    "_id": "FB50N6QZ",
+    "createdAt": "2026-11-19T12:07:51.298Z"
+  },
+  {
+    "customerName": "Customer",
+    "phone": "9999999999",
+    "address": "221B, MG Road",
+    "city": "Bengaluru",
+    "pincode": "560001",
+    "payment": "upi",
+    "subtotal": 374,
+    "deliveryFee": 29,
+    "total": 403,
+    "status": "placed",
+    "items": [
+      {
+        "id": "f2",
+        "name": "Apple - Royal Gala, Regular",
+        "image": "/red-royal-gala-apples-fresh.jpg",
+        "price": 199,
+        "quantity": 1,
+        "weight": "4 pcs (approx. 600 - 800 g)"
+      },
+      {
+        "id": "f1",
+        "name": "Banana - Robusta",
+        "image": "/fresh-yellow-bananas-bunch-on-white-background.jpg",
+        "price": 56,
+        "quantity": 1,
+        "weight": "1 kg"
+      },
+      {
+        "id": "f3",
+        "name": "Pomegranate",
+        "image": "/fresh-pomegranate-fruit-cut-open.jpg",
+        "price": 119,
+        "quantity": 1,
+        "weight": "500 g"
+      }
+    ],
+    "orderId": "FBAG2JXB",
+    "userEmail": null,
+    "_id": "FBAG2JXB",
+    "createdAt": "2026-11-19T09:58:09.897Z"
+  },
+  {
+    "total": 140,
+    "pincode": "560001",
+    "payment": "cod",
+    "items": [
+      {
+        "price": 100,
+        "weight": "1 kg",
+        "quantity": 1,
+        "name": "Apple",
+        "id": "apple"
+      }
+    ],
+    "city": "Bengaluru",
+    "customerName": "Checkout Test",
+    "subtotal": 100,
+    "address": "Test Address",
+    "deliveryFee": 40,
+    "status": "placed",
+    "phone": "9876543210",
+    "orderId": "FB1NNMRL",
+    "userEmail": null,
+    "_id": "FB1NNMRL",
+    "createdAt": "2026-11-19T09:41:07.847Z"
+  }
+]

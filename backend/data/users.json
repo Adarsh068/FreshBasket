@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "a7c8172ea6263398c21b93b2",
+    "name": "Test User",
+    "email": "test-user-2026@example.com",
+    "phone": "9876543210",
+    "password": "$2a$10$XhCYCYe28ABXxfwu5nJ4NeP5aMduc2xxvK6KPOSRmwVZ2DYfc6Y8a",
+    "role": "user"
+  },
+  {
+    "_id": "7b8f4e10564e277f808c6578",
+    "name": "Backend Test User",
+    "email": "backend-test-2026@example.com",
+    "phone": "9876543210",
+    "password": "$2a$10$EAG9XtUoMm2FsyOokzHebe./iIDskgo271C/uKamZZduIuU6kq6Dm",
+    "role": "user"
+  },
+  {
+    "_id": "0e92f30fb603d2dd9d63c37a",
+    "name": "Adarsh Patil",
+    "email": "patiladarsh068@gmail.com",
+    "phone": "8431104280",
+    "password": "$2a$10$rf8HDF/rLqcU/HRFXk3GROAo5ZFyjXI2RE3Gbe8g8zv2/QsCSKV/.",
+    "role": "user"
+  }
+]

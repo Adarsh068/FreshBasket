@@ -1,0 +1,18 @@
+[
+  {
+    "planId": "fruits-daily",
+    "planName": "Daily Fruits",
+    "price": 499,
+    "duration": "monthly",
+    "customerName": "Smoke Test",
+    "phone": "9876543210",
+    "address": "Test Address",
+    "city": "Bengaluru",
+    "pincode": "560001",
+    "frequency": "daily",
+    "subscriptionId": "SUBO7Y7E2",
+    "_id": "SUBO7Y7E2",
+    "status": "active",
+    "createdAt": "2026-11-19T12:07:51.321Z"
+  }
+]
