@@ -3,6 +3,7 @@ const router = express.Router();
 const Subscription = require("../models/Subscription");
 const { protect, adminOnly } = require("../middleware/auth");
 const { sendSubscriptionConfirmation } = require("../utils/whatsapp");
+const fileSubscriptions = require("../config/file-subscriptions");
 
 // POST /api/subscriptions - create (public)
 router.post("/", async (req, res) => {
@@ -10,7 +11,12 @@ router.post("/", async (req, res) => {
     console.log("=== SUBSCRIPTION POST HIT ===")
     console.log("Body:", JSON.stringify(req.body))
     const subscriptionId = "SUB" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    const sub = await Subscription.create({ ...req.body, subscriptionId });
+    let sub;
+    if (Subscription.db.readyState === 1) {
+      sub = await Subscription.create({ ...req.body, subscriptionId });
+    } else {
+      sub = fileSubscriptions.createSubscription({ ...req.body, subscriptionId });
+    }
 
     // ✅ Send WhatsApp - phone comes directly from subscription form
     if (req.body.phone) {

@@ -1,8 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { getApiBase } from "@/lib/api-url"
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+const API = getApiBase()
 
 export type AuthUser = {
   _id: string
@@ -37,11 +38,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function login(email: string, password: string) {
-    const res = await fetch(`${API}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    let res: Response
+    try {
+      res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Backend request timed out. Please ensure the server is running.")
+      }
+      throw new Error("Cannot reach the backend. Please ensure the server is running.")
+    } finally {
+      clearTimeout(timeout)
+    }
     const data = await res.json()
     if (!res.ok) throw new Error(data.message || "Login failed")
     localStorage.setItem("fb:user", JSON.stringify(data))
@@ -49,11 +63,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(name: string, email: string, password: string, phone: string) {
-    const res = await fetch(`${API}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, phone }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    let res: Response
+    try {
+      res = await fetch(`${API}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, phone }),
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Backend request timed out. Please ensure the server is running.")
+      }
+      throw new Error("Cannot reach the backend. Please ensure the server is running.")
+    } finally {
+      clearTimeout(timeout)
+    }
     const data = await res.json()
     if (!res.ok) throw new Error(data.message || "Registration failed")
     localStorage.setItem("fb:user", JSON.stringify(data))

@@ -7,7 +7,8 @@ import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
 import { buildOrderFromCart, saveOrder } from "@/lib/store"
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+import { getApiBase } from "@/lib/api-url"
+const API = getApiBase()
 
 type PaymentMethod = "cod" | "upi" | "card"
 

@@ -1,13 +1,28 @@
 // lib/api.ts
 // Central API client — calls Express backend
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+import { getApiBase } from "@/lib/api-url"
+
+const BASE = getApiBase()
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+  let res: Response
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Backend request timed out.")
+    }
+    throw new Error("Cannot reach the backend.")
+  } finally {
+    clearTimeout(timeout)
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new Error(err.message || "Request failed")

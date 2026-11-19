@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require("../models/Order");
 const { protect, adminOnly } = require("../middleware/auth");
 const { sendOrderConfirmation } = require("../utils/whatsapp");
+const fileOrders = require("../config/file-orders");
 
 // POST /api/orders - place new order
 
@@ -29,7 +30,12 @@ router.post("/", async (req, res) => {
     }
 
     const orderId = "FB" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    const order = await Order.create({ ...req.body, orderId, userEmail });
+    let order;
+    if (Order.db.readyState === 1) {
+      order = await Order.create({ ...req.body, orderId, userEmail });
+    } else {
+      order = fileOrders.createOrder({ ...req.body, orderId, userEmail });
+    }
 
 
     // ✅ Send WhatsApp confirmation
@@ -54,7 +60,9 @@ router.post("/", async (req, res) => {
 // GET /api/orders/user/mine - logged-in user sees their own orders
 router.get("/user/mine", protect, async (req, res) => {
   try {
-    const orders = await Order.find({ userEmail: req.user.email }).sort({ createdAt: -1 });
+    const orders = Order.db.readyState === 1
+      ? await Order.find({ userEmail: req.user.email }).sort({ createdAt: -1 })
+      : fileOrders.findByUserEmail(req.user.email);
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: err.message });

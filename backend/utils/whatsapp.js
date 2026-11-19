@@ -1,9 +1,11 @@
 const twilio = require("twilio");
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+function getTwilioClient() {
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    throw new Error("Twilio credentials are not configured");
+  }
+  return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
 
 async function sendOrderConfirmation({ customerName, customerPhone, orderId, items, totalAmount }) {
   try {
@@ -34,7 +36,7 @@ ${itemList}
 Thank you for choosing FreshBasket! 🍎🥦
 For support: freshbasket@gmail.com`;
 
-    const response = await client.messages.create({
+    const response = await getTwilioClient().messages.create({
       from: process.env.TWILIO_WHATSAPP_FROM,
       to: `whatsapp:${phone}`,
       body: message,
@@ -70,7 +72,7 @@ Your fresh fruits & vegetables will be delivered as per your selected schedule! 
 Thank you for choosing FreshBasket! 🍎🥦
 For support: freshbasket@gmail.com`;
 
-    const response = await client.messages.create({
+    const response = await getTwilioClient().messages.create({
       from: process.env.TWILIO_WHATSAPP_FROM,
       to: `whatsapp:${phone}`,
       body: message,

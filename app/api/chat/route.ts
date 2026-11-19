@@ -41,38 +41,74 @@ export async function POST(req: NextRequest) {
     const groqKey = process.env.GROQ_API_KEY
     if (!groqKey) {
       return NextResponse.json(
-        { error: "GROQ_API_KEY not set in .env.local" },
+        { error: "GROQ_API_KEY is not configured" },
         { status: 500 }
       )
     }
 
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${groqKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
-        ],
-        max_tokens: 1024,
-        temperature: 0.7,
-      }),
-    })
+    if (!Array.isArray(messages)) {
+      return NextResponse.json(
+        { error: "messages must be an array" },
+        { status: 400 }
+      )
+    }
+
+    const chatMessages = messages
+      .filter((message: { role: string; content: string }) =>
+        message.role === "user" || message.role === "assistant"
+      )
+      .map((message: { role: string; content: string }) => ({
+        role: message.role,
+        content: message.content,
+      }))
+
+    const model = process.env.GROQ_MODEL || "openai/gpt-oss-20b"
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 25000)
+
+    let response: Response
+    try {
+      response = await fetch(
+        GROQ_API_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${groqKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...chatMessages,
+            ],
+            max_tokens: 1024,
+            temperature: 0.7,
+          }),
+          signal: controller.signal,
+        }
+      )
+    } finally {
+      clearTimeout(timeout)
+    }
 
     if (!response.ok) {
       const err = await response.text()
-      return NextResponse.json({ error: err }, { status: response.status })
+      console.error("Groq API error:", err)
+      return NextResponse.json(
+        { error: "The Groq API request failed" },
+        { status: 502 }
+      )
     }
 
     const data = await response.json()
-    const reply = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't respond right now."
+    const reply = data.choices?.[0]?.message?.content?.trim()
 
-    return NextResponse.json({ reply })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({
+      reply: reply || "Sorry, I couldn't respond right now.",
+    })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unexpected server error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

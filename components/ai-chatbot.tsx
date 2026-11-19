@@ -85,17 +85,28 @@ export function AIChatbot() {
         }),
       })
       const data = await res.json()
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply ?? data.error ?? "Something went wrong." },
-      ])
+      if (!res.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "The assistant is temporarily unavailable. Please try again.",
+          },
+        ])
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.reply ?? "Something went wrong." },
+        ])
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "❌ Could not connect. Make sure GROQ_API_KEY is set in .env.local and restart npm run dev." },
+        { role: "assistant", content: "Could not connect to the nutrition assistant. Please check the GROQ_API_KEY server configuration." },
       ])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   function reset() {

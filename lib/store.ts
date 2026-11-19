@@ -115,7 +115,8 @@ export function loadSubscriptions(): SubscriptionRecord[] {
 export async function saveSubscription(sub: SubscriptionRecord) {
   // Save to MongoDB
   try {
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+    const { getApiBase } = await import("@/lib/api-url")
+    const API = getApiBase()
     await fetch(`${API}/subscriptions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { protect } = require("../middleware/auth");
+const fileUsers = require("../config/file-users");
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -14,14 +15,26 @@ router.post("/register", async (req, res) => {
     if (!name || !email || !password)
       return res.status(400).json({ message: "Name, email and password required" });
 
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "User already exists" });
-
-    const user = await User.create({ name, email, phone, password });
+    let user;
+    if (User.db.readyState === 1) {
+      const exists = await User.findOne({ email });
+      if (exists) return res.status(400).json({ message: "User already exists" });
+      user = await User.create({ name, email, phone, password });
+    } else {
+      try {
+        user = await fileUsers.createUser({ name, email, phone, password });
+      } catch (error) {
+        if (error.code === 11000) {
+          return res.status(400).json({ message: "User already exists" });
+        }
+        throw error;
+      }
+    }
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone || "",
       role: user.role,
       token: generateToken(user._id),
     });
@@ -38,15 +51,23 @@ router.post("/login", async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Email and password required" });
 
-    const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password)))
+    let user;
+    let passwordMatches = false;
+    if (User.db.readyState === 1) {
+      user = await User.findOne({ email });
+      passwordMatches = Boolean(user && await user.matchPassword(password));
+    } else {
+      user = await fileUsers.findByEmail(email);
+      passwordMatches = Boolean(user && await fileUsers.matchPassword(user, password));
+    }
+    if (!passwordMatches)
       return res.status(401).json({ message: "Invalid email or password" });
 
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      phone: user.phone,      // ← ADD THIS
+      phone: user.phone || "",
       role: user.role,
       token: generateToken(user._id),
     });

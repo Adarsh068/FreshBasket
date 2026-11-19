@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Clock, Plus, Star } from "lucide-react"
 import type { Product } from "@/lib/products"
 import { useCart } from "@/lib/cart-context"
+import { getApiBase } from "@/lib/api-url"
 
 export function ProductCard({ product }: { product: Product }) {
   const { getQuantity, add, increment, decrement } = useCart()
@@ -15,7 +16,7 @@ export function ProductCard({ product }: { product: Product }) {
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+    const API = getApiBase()
     fetch(`${API}/products/${product.slug}`)
       .then(r => r.json())
       .then(data => { if (data?.inStock === false) setInStock(false) })

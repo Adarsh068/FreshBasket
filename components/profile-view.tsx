@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { LogOut, User, ShoppingBag, Package, ChevronDown, ChevronUp } from "lucide-react"
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+import { getApiBase } from "@/lib/api-url"
+const API = getApiBase()
 
 type OrderItem = { id: string; name: string; image: string; price: number; quantity: number; weight: string }
 type Order = {
