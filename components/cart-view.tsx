@@ -4,9 +4,22 @@ import Image from "next/image"
 import Link from "next/link"
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export function CartView() {
   const { items, increment, decrement, remove, subtotal, mrpTotal, savings, totalQuantity, clear } = useCart()
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  function handleCheckout() {
+    if (loading) return
+    if (!user) {
+      router.push("/login?redirect=%2Fcheckout&reason=checkout")
+      return
+    }
+    router.push("/checkout")
+  }
 
   if (items.length === 0) {
     return (
@@ -163,12 +176,14 @@ export function CartView() {
           </div>
         </dl>
         <div className="border-t border-border p-4">
-          <Link
-            href="/checkout"
-            className="flex w-full items-center justify-center rounded-md bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-md bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            Proceed to Checkout
-          </Link>
+            {loading ? "Checking login..." : "Proceed to Checkout"}
+          </button>
           {subtotal < 499 && (
             <p className="mt-2 text-center text-[11px] text-muted-foreground">
               Add ₹{499 - subtotal} more for free delivery

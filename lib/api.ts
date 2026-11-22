@@ -54,9 +54,10 @@ export const productsApi = {
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 export const ordersApi = {
-  create: (order: Omit<OrderRecord, "id" | "orderId" | "createdAt">) =>
+  create: (order: Omit<OrderRecord, "id" | "orderId" | "createdAt">, token: string) =>
     request<OrderRecord>("/orders", {
       method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(order),
     }),
   getAll: (token: string) =>

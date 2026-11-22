@@ -4,37 +4,93 @@ const Order = require("../models/Order");
 const { protect, adminOnly } = require("../middleware/auth");
 const { sendOrderConfirmation } = require("../utils/whatsapp");
 const fileOrders = require("../config/file-orders");
+const Product = require("../models/Product");
+const { loadProducts } = require("../config/file-products");
 
 // POST /api/orders - place new order
 
-router.post("/", async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
-    let userEmail = null;
-    let userName = null;
-    let userPhone = null;
-
-    const auth = req.headers.authorization;
-    if (auth && auth.startsWith("Bearer")) {
-      try {
-        const jwt = require("jsonwebtoken");
-        const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET);
-        const User = require("../models/User");
-        const u = await User.findById(decoded.id);
-        console.log("DB User full object:", u)  
-        if (u) {
-          userEmail = u.email;
-          userName = u.name;
-          userPhone = u.phone;
-        }
-      } catch {}
+    const { customerName, phone, address, city, pincode, payment } = req.body;
+    if (!address || !city || !pincode || !payment) {
+      return res.status(400).json({ message: "Address, city, pincode and payment method are required" });
+    }
+    if (!["cod", "upi", "card"].includes(payment)) {
+      return res.status(400).json({ message: "Invalid payment method" });
+    }
+    if (!/^[0-9]{6}$/.test(String(pincode || ""))) {
+      return res.status(400).json({ message: "Enter a valid 6-digit pincode" });
+    }
+    if (!/^$|^[0-9]{10}$/.test(String(phone || ""))) {
+      return res.status(400).json({ message: "Enter a valid 10-digit phone number" });
+    }
+    if (!Array.isArray(req.body.items) || req.body.items.length === 0) {
+      return res.status(400).json({ message: "Order must contain at least one product" });
     }
 
+    const requested = new Map();
+    for (const item of req.body.items) {
+      if (!item || typeof item.id !== "string") {
+        return res.status(400).json({ message: "Invalid order item" });
+      }
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+        return res.status(400).json({ message: "Invalid product quantity" });
+      }
+      requested.set(item.id, (requested.get(item.id) || 0) + quantity);
+    }
+
+    let trustedProducts;
+    if (Product.db.readyState === 1) {
+      trustedProducts = await Product.find({ id: { $in: [...requested.keys()] } });
+    } else {
+      trustedProducts = loadProducts().filter((product) => requested.has(product.id));
+    }
+
+    if (trustedProducts.length !== requested.size) {
+      return res.status(400).json({ message: "One or more products are unavailable" });
+    }
+
+    const items = trustedProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: Number(product.price),
+      quantity: requested.get(product.id),
+      weight: product.weight,
+    }));
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const deliveryFee = subtotal >= 499 ? 0 : 29;
+    const total = subtotal + deliveryFee;
+
+    const unavailable = trustedProducts.find((product) => product.inStock === false);
+    if (unavailable) return res.status(400).json({ message: "One or more products are out of stock" });
+
     const orderId = "FB" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const userEmail = req.user.email;
+    const userName = req.user.name;
+    const userPhone = req.user.phone || String(phone || "");
+    const orderPayload = {
+      orderId,
+      customerName: userName || String(customerName || "").trim(),
+      phone: userPhone,
+      address: String(address).trim(),
+      city: String(city).trim(),
+      pincode: String(pincode).trim(),
+      payment,
+      items,
+      subtotal,
+      deliveryFee,
+      total,
+      status: "placed",
+      userEmail,
+    };
+
     let order;
     if (Order.db.readyState === 1) {
-      order = await Order.create({ ...req.body, orderId, userEmail });
+      order = await Order.create(orderPayload);
     } else {
-      order = fileOrders.createOrder({ ...req.body, orderId, userEmail });
+      order = fileOrders.createOrder(orderPayload);
     }
 
 
@@ -43,9 +99,9 @@ router.post("/", async (req, res) => {
       await sendOrderConfirmation({
         customerName: userName || "Customer",
         customerPhone: userPhone,
-        orderId: order.orderId,
-        items: req.body.items || [],
-        totalAmount: req.body.totalAmount || req.body.total || 0,
+        orderId,
+        items,
+        totalAmount: total,
       });
     } else {
       console.log("❌ WhatsApp skipped — no phone number found")

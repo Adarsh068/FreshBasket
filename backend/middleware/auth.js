@@ -11,6 +11,7 @@ const protect = async (req, res, next) => {
       req.user = User.db.readyState === 1
         ? await User.findById(decoded.id).select("-password")
         : await fileUsers.findById(decoded.id);
+      if (!req.user) return res.status(401).json({ message: "Not authorized, user not found" });
       return next();
     } catch {
       return res.status(401).json({ message: "Not authorized, token failed" });

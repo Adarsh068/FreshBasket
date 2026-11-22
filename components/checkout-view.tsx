@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { CheckCircle2, CreditCard } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
@@ -14,10 +15,18 @@ type PaymentMethod = "cod" | "upi" | "card"
 
 export function CheckoutView() {
   const { items, subtotal, mrpTotal, savings, totalQuantity, clear } = useCart()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [payment, setPayment] = useState<PaymentMethod>("cod")
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login?redirect=%2Fcheckout&reason=checkout")
+    }
+  }, [authLoading, user, router])
 
   useEffect(() => {
     if (orderId) window.scrollTo({ top: 0, behavior: "auto" })
@@ -25,6 +34,22 @@ export function CheckoutView() {
 
   const deliveryFee = subtotal >= 499 ? 0 : 29
   const total = subtotal + deliveryFee
+
+  if (authLoading) {
+    return (
+      <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-sm text-muted-foreground">Checking your login...</p>
+      </section>
+    )
+  }
+
+  if (!user) {
+    return (
+      <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-sm font-medium">Please login or create an account to continue with your order.</p>
+      </section>
+    )
+  }
 
   if (orderId) {
     return (
@@ -73,6 +98,11 @@ export function CheckoutView() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (submitting) return
+    setError(null)
+    if (!user?.token) {
+      setError("Please login again to place your order.")
+      return
+    }
     setSubmitting(true)
     const form = e.currentTarget
     const fd = new FormData(form)
@@ -98,52 +128,63 @@ export function CheckoutView() {
       })),
     }
 
-    const localOrder = buildOrderFromCart({
-      cartItems: items,
-      subtotal,
-      deliveryFee,
-      customerName: orderPayload.customerName,
-      phone: orderPayload.phone,
-      address: orderPayload.address,
-      city: orderPayload.city,
-      pincode: orderPayload.pincode,
-      payment,
-    })
-    saveOrder(localOrder)
-
-    let confirmedOrderId = localOrder.id
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" }
-      if (user?.token) headers["Authorization"] = `Bearer ${user.token}`
+      headers["Authorization"] = `Bearer ${user.token}`
       const res = await fetch(`${API}/orders`, {
         method: "POST",
         headers,
         body: JSON.stringify(orderPayload),
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (data?.orderId) confirmedOrderId = data.orderId
+      const data = await res.json().catch(() => ({ message: "Unable to place order." }))
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError("Your login has expired. Please login again to place your order.")
+        } else {
+          setError(data.message || "Unable to place your order. Please try again.")
+        }
+        setSubmitting(false)
+        return
       }
-    } catch (error) {
-      console.error("Order API unavailable; order saved locally:", error)
-    }
 
-    setOrderId(confirmedOrderId)
-    clear()
-    setSubmitting(false)
+      const confirmedOrderId = data.orderId || data._id
+      const localOrder = buildOrderFromCart({
+        cartItems: items,
+        subtotal: data.subtotal ?? subtotal,
+        deliveryFee: data.deliveryFee ?? deliveryFee,
+        customerName: data.customerName || user.name,
+        phone: data.phone || orderPayload.phone,
+        address: data.address || orderPayload.address,
+        city: data.city || orderPayload.city,
+        pincode: data.pincode || orderPayload.pincode,
+        payment,
+      })
+      saveOrder({ ...localOrder, id: confirmedOrderId })
+      setOrderId(confirmedOrderId)
+      clear()
+    } catch {
+      setError("Cannot reach the order service. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <section className="mx-auto grid max-w-[1280px] gap-6 px-4 py-6 lg:grid-cols-[1fr_360px]">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
         {/* Address */}
         <div className="rounded-md border border-border bg-card">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-bold">Delivery Address</h2>
           </div>
           <div className="grid gap-3 p-4 sm:grid-cols-2">
-            <Field label="Full name" name="name" required defaultValue="Customer" />
-            <Field label="Mobile number" name="phone" required type="tel" defaultValue="9999999999" />
+            <Field label="Full name" name="name" required defaultValue={user.name} />
+            <Field label="Mobile number" name="phone" required type="tel" defaultValue={user.phone || "9999999999"} />
             <Field
               label="Address line"
               name="address"

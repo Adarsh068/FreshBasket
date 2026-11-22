@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
 import { Leaf, Loader2, Eye, EyeOff } from "lucide-react"
@@ -10,6 +10,7 @@ type Tab = "login" | "signup"
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, register } = useAuth()
   const [tab, setTab] = useState<Tab>("login")
   const [name, setName] = useState("")
@@ -35,7 +36,8 @@ export function LoginForm() {
       } else {
         await register(name.trim(), email, password, phone.trim())
       }
-      router.push("/profile")
+      const redirect = searchParams.get("redirect")
+      router.push(redirect === "/checkout" ? "/checkout" : "/profile")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     } finally {
@@ -45,6 +47,11 @@ export function LoginForm() {
 
   return (
     <div className="rounded-md border border-border bg-card p-6 shadow-sm">
+      {searchParams.get("reason") === "checkout" && (
+        <div className="mb-5 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
+          Please login or create an account to continue with your order.
+        </div>
+      )}
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <Leaf className="h-6 w-6" />
