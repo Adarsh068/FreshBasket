@@ -1,9 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import Image from "next/image"
 import { Check, Sparkles, TrendingUp } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { type PlanCategory, getPlansByCategory, type SubscriptionPlan } from "@/lib/subscription-plans"
 
 const categories: { id: PlanCategory; label: string; description: string }[] = [
@@ -92,8 +93,23 @@ export function SubscriptionPlansView() {
 }
 
 function PlanCard({ plan }: { plan: SubscriptionPlan }) {
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const discount = Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
   const frequencyLabel = plan.frequency === "daily" ? "/day" : plan.frequency === "weekly" ? "/week" : "/month"
+
+  function handleSubscribe() {
+    if (loading) return
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/subscriptions/${plan.id}`)}&reason=subscription`)
+      return
+    }
+    if (user.role === "admin") {
+      router.push("/admin")
+      return
+    }
+    router.push(`/subscriptions/${plan.id}`)
+  }
 
   return (
     <article
@@ -165,8 +181,10 @@ function PlanCard({ plan }: { plan: SubscriptionPlan }) {
 
         <div className="mt-4 flex-1" />
 
-        <Link
-          href={`/subscriptions/${plan.id}`}
+        <button
+          type="button"
+          onClick={handleSubscribe}
+          disabled={loading}
           className={`mt-2 inline-flex items-center justify-center rounded-md py-2.5 text-sm font-bold transition-colors ${
             plan.bestValue
               ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -174,7 +192,7 @@ function PlanCard({ plan }: { plan: SubscriptionPlan }) {
           }`}
         >
           Subscribe Now
-        </Link>
+        </button>
       </div>
     </article>
   )

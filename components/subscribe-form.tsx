@@ -1,29 +1,50 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Calendar, CheckCircle2 } from "lucide-react"
 import type { SubscriptionPlan } from "@/lib/subscription-plans"
 import { saveSubscription } from "@/lib/store"
 import { useAuth } from "@/lib/auth-context"
 
 export function SubscribeForm({ plan }: { plan: SubscriptionPlan }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [confirmedId, setConfirmedId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const frequencyLabel = plan.frequency === "daily" ? "/day" : plan.frequency === "weekly" ? "/week" : "/month"
   const discount = Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      router.replace(`/login?redirect=${encodeURIComponent(`/subscriptions/${plan.id}`)}&reason=subscription`)
+    } else if (user.role === "admin") {
+      router.replace("/admin")
+    }
+  }, [authLoading, user, router, plan.id])
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
+    if (!user?.token) {
+      router.push(`/login?redirect=${encodeURIComponent(`/subscriptions/${plan.id}`)}&reason=subscription`)
+      return
+    }
+    if (user.role === "admin") {
+      router.replace("/admin")
+      return
+    }
     setSubmitting(true)
     const form = e.currentTarget
     const fd = new FormData(form)
     const id = "SUB" + Math.random().toString(36).slice(2, 8).toUpperCase()
 
-    setTimeout(() => {
-      saveSubscription({
+    try {
+      await saveSubscription({
         id,
         planId: plan.id,
         planName: plan.name,
@@ -36,10 +57,29 @@ export function SubscribeForm({ plan }: { plan: SubscriptionPlan }) {
         startDate: String(fd.get("startDate") || tomorrow),
         status: "active",
         createdAt: Date.now(),
-      }, user?.token)
+      }, user.token)
       setConfirmedId(id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create your subscription.")
+    } finally {
       setSubmitting(false)
-    }, 700)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-sm text-muted-foreground">Checking your login...</p>
+      </section>
+    )
+  }
+
+  if (!user || user.role === "admin") {
+    return (
+      <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-sm font-medium">Please login or create an account to subscribe.</p>
+      </section>
+    )
   }
 
   if (confirmedId) {
@@ -79,6 +119,11 @@ export function SubscribeForm({ plan }: { plan: SubscriptionPlan }) {
   return (
     <section className="mx-auto grid max-w-[1280px] gap-6 px-4 py-8 lg:grid-cols-[1fr_360px]">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
         <div>
           <Link href="/subscriptions" className="text-xs text-primary hover:underline">
             ← Back to plans

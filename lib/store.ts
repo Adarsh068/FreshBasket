@@ -112,16 +112,16 @@ export function loadSubscriptions(): SubscriptionRecord[] {
   return safeParse<SubscriptionRecord[]>(localStorage.getItem(SUBS_KEY), [])
 }
 
-export async function saveSubscription(sub: SubscriptionRecord, token?: string) {
-  // Save to MongoDB
+export async function saveSubscription(sub: SubscriptionRecord, token: string) {
+  const { getApiBase } = await import("@/lib/api-url")
+  const API = getApiBase()
+  let response: Response
   try {
-    const { getApiBase } = await import("@/lib/api-url")
-    const API = getApiBase()
-    await fetch(`${API}/subscriptions`, {
+    response = await fetch(`${API}/subscriptions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         planId: sub.planId,
@@ -136,10 +136,15 @@ export async function saveSubscription(sub: SubscriptionRecord, token?: string) 
         status: "active",
       }),
     })
-  } catch (e) {
-    console.error("Failed to save subscription", e)
+  } catch {
+    throw new Error("Cannot reach the subscription service. Please try again.")
   }
-  // Also keep localStorage as backup
+
+  const data = await response.json().catch(() => ({ message: "Unable to create subscription." }))
+  if (!response.ok) {
+    throw new Error(data.message || "Unable to create subscription.")
+  }
+
   const all = loadSubscriptions()
   all.unshift(sub)
   localStorage.setItem(SUBS_KEY, JSON.stringify(all))

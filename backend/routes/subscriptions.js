@@ -4,34 +4,24 @@ const Subscription = require("../models/Subscription");
 const { protect, adminOnly } = require("../middleware/auth");
 const { sendSubscriptionConfirmation } = require("../utils/whatsapp");
 const fileSubscriptions = require("../config/file-subscriptions");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const fileUsers = require("../config/file-users");
-
-// POST /api/subscriptions - create (public)
-router.post("/", async (req, res) => {
+// POST /api/subscriptions - authenticated customers only
+router.post("/", protect, async (req, res) => {
   try {
-    console.log("=== SUBSCRIPTION POST HIT ===")
-    console.log("Body:", JSON.stringify(req.body))
     const subscriptionId = "SUB" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    let userEmail = null;
-    let authenticatedUser = null;
-    const auth = req.headers.authorization;
-    if (auth && auth.startsWith("Bearer")) {
-      try {
-        const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET);
-        const user = User.db.readyState === 1
-          ? await User.findById(decoded.id).select("-password")
-          : await fileUsers.findById(decoded.id);
-        if (user) {
-          authenticatedUser = user;
-          userEmail = user.email;
-        }
-      } catch {}
-    }
-    if (authenticatedUser?.role === "admin") {
+    if (req.user.role === "admin") {
       return res.status(403).json({ message: "Admin accounts cannot create customer subscriptions" });
     }
+    const required = ["planId", "planName", "category", "frequency", "price", "customerName", "phone", "address", "startDate"];
+    if (required.some((field) => req.body[field] === undefined || req.body[field] === null || req.body[field] === "")) {
+      return res.status(400).json({ message: "All subscription details are required" });
+    }
+    if (!["fruits", "vegetables", "combo"].includes(req.body.category)) {
+      return res.status(400).json({ message: "Invalid subscription category" });
+    }
+    if (!["daily", "weekly", "monthly"].includes(req.body.frequency)) {
+      return res.status(400).json({ message: "Invalid subscription frequency" });
+    }
+    const userEmail = req.user.email;
     let sub;
     if (Subscription.db.readyState === 1) {
       sub = await Subscription.create({ ...req.body, subscriptionId, userEmail });

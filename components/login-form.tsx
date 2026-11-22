@@ -42,7 +42,13 @@ export function LoginForm() {
       if (authenticatedUser?.role === "admin") {
         router.push("/admin")
       } else {
-        router.push(redirect === "/checkout" ? "/checkout" : "/profile")
+        if (redirect === "/checkout") {
+          router.push("/checkout")
+        } else if (redirect?.startsWith("/subscriptions/")) {
+          router.push(redirect)
+        } else {
+          router.push("/profile")
+        }
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
@@ -53,6 +59,11 @@ export function LoginForm() {
 
   return (
     <div className="rounded-md border border-border bg-card p-6 shadow-sm">
+      {searchParams.get("reason") === "subscription" && (
+        <div className="mb-5 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
+          Please login or create an account to subscribe to a FreshBasket plan.
+        </div>
+      )}
       {searchParams.get("reason") === "checkout" && (
         <div className="mb-5 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
           Please login or create an account to continue with your order.
