@@ -71,6 +71,29 @@ const seed = async () => {
     );
   }
 
+  const staleNames = [
+    "Avocado - Imported",
+    "Fresh Fruit Assortment",
+    "Lemon",
+    "Ginger",
+    "Garlic",
+    "Mushroom - Button",
+    "Mango - Kesar",
+    "Mango - Alphonso, Premium",
+    "Orange - Imported",
+    "Grapes - Green, Seedless",
+    "Sapota (Chikoo) - Fresh",
+    "Sapota",
+    "Sapodilla",
+    "Pear - Williams, Fresh",
+    "Kiwi - Green",
+    "Peach - Fresh",
+    "Plum - Fresh, Red",
+  ];
+  for (const staleName of staleNames) {
+    await Product.deleteMany({ name: { $regex: `^${staleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } });
+  }
+
   const all = await Product.find({});
   const keptIds = new Set();
   for (const product of products) {

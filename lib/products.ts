@@ -98,12 +98,70 @@ export async function fetchPublicProducts(): Promise<Product[]> {
     if (!Array.isArray(remote)) return products
 
     const merged = new Map<string, Product>()
-    products.forEach((product) => merged.set(product.slug, product))
+    products.forEach((product) => merged.set(product.slug, { ...product }))
+
+    const aliases: Record<string, string> = {
+      "sapota": "chikoo",
+      "sapota chikoo": "chikoo",
+      "sapota chikoo fresh": "chikoo",
+      "sapodilla": "chikoo",
+      "chikoo fresh": "chikoo",
+      "sweet lime mosambi": "sweet-lime",
+      "mosambi": "sweet-lime",
+      "orange imported": "orange",
+      "mango kesar": "mango",
+      "mango alphonso": "mango",
+      "kiwi green": "kiwi",
+      "peach fresh": "peach",
+      "plum fresh red": "plum",
+      "grapes green": "grapes-green-seedless",
+      "grapes green seedless": "grapes-green-seedless",
+      "grapes black seedless": "grapes-black",
+    }
+
+    const normalizeName = (name: string) =>
+      name.toLowerCase().replace(/[_-]+/g, " ").replace(/\b(fresh|regular|premium|imported|whole|red|white|green|seedless)\b/g, " ")
+        .replace(/\s+/g, " ").trim()
+
+    const findCanonical = (name: string, slug: string) => {
+      const normalizedSlug = slug.toLowerCase()
+      const exactSlug = merged.get(normalizedSlug)
+      if (exactSlug) return exactSlug
+      const raw = normalizeName(name)
+      const aliasSlug = aliases[raw]
+      if (aliasSlug && merged.has(aliasSlug)) return merged.get(aliasSlug)!
+      return Array.from(merged.values()).find((product) => {
+        const canonicalName = normalizeName(product.name)
+        return raw === canonicalName || raw.includes(canonicalName) || canonicalName.includes(raw)
+      })
+    }
+
     remote.forEach((item: Record<string, unknown>) => {
       const type = item.type === "vegetable" ? "vegetable" : "fruit"
       const name = String(item.name || "").trim()
       const slug = String(item.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))
       if (!name || !slug) return
+      const canonical = findCanonical(name, slug)
+      if (canonical) {
+        merged.set(canonical.slug, {
+          ...canonical,
+          id: canonical.id,
+          slug: canonical.slug,
+          name: canonical.name,
+          image: canonical.image,
+          inStock: item.inStock !== false,
+          price: Number(item.price) || canonical.price,
+          mrp: Number(item.mrp) || canonical.mrp,
+        })
+        return
+      }
+
+      const staleSeedNames = [
+        "avocado", "lemon", "ginger", "garlic", "mushroom", "fresh fruit assortment",
+        "mango kesar", "mango alphonso premium", "orange imported",
+      ]
+      if (staleSeedNames.some((stale) => normalizeName(name).includes(stale))) return
+
       merged.set(slug, {
         id: String(item.id || item._id || slug),
         slug,
