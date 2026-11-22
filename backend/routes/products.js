@@ -77,6 +77,20 @@ router.post("/", protect, adminOnly, async (req, res) => {
     if (!req.body.name || !req.body.slug || !req.body.image) {
       return res.status(400).json({ message: "Product name, image and slug are required" });
     }
+    const normalizedName = String(req.body.name).trim();
+    if (Product.db.readyState === 1) {
+      const escapedName = normalizedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const duplicate = await Product.findOne({
+        $or: [
+          { name: { $regex: `^${escapedName}$`, $options: "i" } },
+          { slug: req.body.slug },
+          { id: req.body.id },
+        ],
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: "A product with this name already exists" });
+      }
+    }
     const product = Product.db.readyState === 1
       ? await Product.create(req.body)
       : createProduct(req.body);

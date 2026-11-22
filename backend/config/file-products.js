@@ -45,7 +45,12 @@ function getAllProducts() {
 
 function createProduct(product) {
   const products = readCustomProducts();
-  if (products.some((item) => item.slug === product.slug || item.id === product.id)) {
+  const normalizedName = String(product.name).trim().toLowerCase();
+  if (products.some((item) =>
+    item.slug === product.slug ||
+    item.id === product.id ||
+    String(item.name).trim().toLowerCase() === normalizedName
+  )) {
     const error = new Error("Product with this name already exists");
     error.code = 11000;
     throw error;
