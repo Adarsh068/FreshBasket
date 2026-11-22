@@ -45,6 +45,12 @@ export default function HomePage() {
                 >
                   Shop Vegetables
                 </Link>
+                <Link
+                  href="/subscriptions"
+                  className="inline-flex items-center gap-2 rounded-md border-2 border-accent bg-card px-5 py-2.5 text-sm font-bold text-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  Subscriptions
+                </Link>
               </div>
             </div>
             <div className="relative h-48 sm:h-64 md:h-72">
