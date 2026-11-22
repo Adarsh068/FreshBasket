@@ -11,6 +11,9 @@ const { loadProducts } = require("../config/file-products");
 
 router.post("/", protect, async (req, res) => {
   try {
+    if (req.user.role === "admin") {
+      return res.status(403).json({ message: "Admin accounts cannot place customer orders" });
+    }
     const { customerName, phone, address, city, pincode, payment } = req.body;
     if (!address || !city || !pincode || !payment) {
       return res.status(400).json({ message: "Address, city, pincode and payment method are required" });

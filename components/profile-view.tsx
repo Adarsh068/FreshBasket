@@ -59,11 +59,12 @@ export function ProfileView() {
   // Redirect if not logged in
   useEffect(() => {
     if (!user) router.replace("/login")
+    else if (user.role === "admin") router.replace("/admin")
   }, [user, router])
 
   // Fetch orders linked to user's name/email from backend
   useEffect(() => {
-    if (!user) return
+    if (!user || user.role === "admin") return
     setLoadingOrders(true)
     fetch(`${API}/orders/user/mine`, {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -75,7 +76,7 @@ export function ProfileView() {
   }, [user])
 
   useEffect(() => {
-    if (!user) return
+    if (!user || user.role === "admin") return
     setLoadingSubscriptions(true)
     fetch(`${API}/subscriptions/user/mine`, {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -91,7 +92,7 @@ export function ProfileView() {
     router.push("/")
   }
 
-  if (!user) return null
+  if (!user || user.role === "admin") return null
 
   return (
     <div className="space-y-6">

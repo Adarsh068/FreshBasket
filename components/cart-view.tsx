@@ -6,14 +6,25 @@ import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export function CartView() {
   const { items, increment, decrement, remove, subtotal, mrpTotal, savings, totalQuantity, clear } = useCart()
   const { user, loading } = useAuth()
   const router = useRouter()
 
+  useEffect(() => {
+    if (!loading && user?.role === "admin") {
+      router.replace("/admin")
+    }
+  }, [loading, user, router])
+
   function handleCheckout() {
     if (loading) return
+    if (user?.role === "admin") {
+      router.push("/admin")
+      return
+    }
     if (!user) {
       router.push("/login?redirect=%2Fcheckout&reason=checkout")
       return

@@ -23,6 +23,9 @@ export function CheckoutView() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!authLoading && user?.role === "admin") {
+      router.replace("/admin")
+    }
     if (!authLoading && !user) {
       router.replace("/login?redirect=%2Fcheckout&reason=checkout")
     }
@@ -47,6 +50,14 @@ export function CheckoutView() {
     return (
       <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
         <p className="text-sm font-medium">Please login or create an account to continue with your order.</p>
+      </section>
+    )
+  }
+
+  if (user.role === "admin") {
+    return (
+      <section className="mx-auto max-w-[720px] px-4 py-16 text-center">
+        <p className="text-sm font-medium">Admin accounts cannot place customer orders.</p>
       </section>
     )
   }

@@ -37,7 +37,13 @@ export function LoginForm() {
         await register(name.trim(), email, password, phone.trim())
       }
       const redirect = searchParams.get("redirect")
-      router.push(redirect === "/checkout" ? "/checkout" : "/profile")
+      const stored = localStorage.getItem("fb:user")
+      const authenticatedUser = stored ? JSON.parse(stored) : null
+      if (authenticatedUser?.role === "admin") {
+        router.push("/admin")
+      } else {
+        router.push(redirect === "/checkout" ? "/checkout" : "/profile")
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     } finally {

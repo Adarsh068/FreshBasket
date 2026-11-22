@@ -15,6 +15,7 @@ router.post("/", async (req, res) => {
     console.log("Body:", JSON.stringify(req.body))
     const subscriptionId = "SUB" + Math.random().toString(36).slice(2, 8).toUpperCase();
     let userEmail = null;
+    let authenticatedUser = null;
     const auth = req.headers.authorization;
     if (auth && auth.startsWith("Bearer")) {
       try {
@@ -22,8 +23,14 @@ router.post("/", async (req, res) => {
         const user = User.db.readyState === 1
           ? await User.findById(decoded.id).select("-password")
           : await fileUsers.findById(decoded.id);
-        if (user) userEmail = user.email;
+        if (user) {
+          authenticatedUser = user;
+          userEmail = user.email;
+        }
       } catch {}
+    }
+    if (authenticatedUser?.role === "admin") {
+      return res.status(403).json({ message: "Admin accounts cannot create customer subscriptions" });
     }
     let sub;
     if (Subscription.db.readyState === 1) {
