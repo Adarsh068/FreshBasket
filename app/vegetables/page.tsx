@@ -4,16 +4,19 @@ import { HeroBanner } from "@/components/hero-banner"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { TopPromoBar } from "@/components/top-promo-bar"
-import { getCategoriesForType, getProductsByType } from "@/lib/products"
+import { fetchPublicProducts } from "@/lib/products"
 
 export const metadata = {
   title: "Fresh Vegetables | FreshBasket",
   description: "Buy fresh vegetables online — farm-fresh greens delivered to your doorstep with FreshBasket.",
 }
 
-export default function VegetablesPage() {
-  const products = getProductsByType("vegetable")
-  const categoryOptions = getCategoriesForType("vegetable")
+export default async function VegetablesPage() {
+  const catalog = await fetchPublicProducts()
+  const products = catalog.filter((product) => product.type === "vegetable")
+  const categoryMap = new Map<string, number>()
+  products.forEach((product) => categoryMap.set(product.category, (categoryMap.get(product.category) || 0) + 1))
+  const categoryOptions = Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count }))
 
   return (
     <main className="min-h-screen bg-background">

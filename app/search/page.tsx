@@ -3,6 +3,7 @@ import { SearchResults } from "@/components/search-results"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { TopPromoBar } from "@/components/top-promo-bar"
+import { fetchPublicProducts } from "@/lib/products"
 
 export const metadata = {
   title: "Search | FreshBasket",
@@ -15,6 +16,7 @@ export default async function SearchPage({
 }) {
   const { q } = await searchParams
   const query = (q || "").trim()
+  const products = await fetchPublicProducts()
 
   return (
     <main className="min-h-screen bg-background">
@@ -26,7 +28,7 @@ export default async function SearchPage({
           { label: query ? `"${query}"` : "All results" },
         ]}
       />
-      <SearchResults query={query} />
+      <SearchResults query={query} products={products} />
       <SiteFooter />
     </main>
   )

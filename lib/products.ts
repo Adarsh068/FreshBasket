@@ -15,6 +15,7 @@ export type Product = {
   type: ProductType
   category: string
   description: string
+  inStock?: boolean
 }
 
 export const products: Product[] = [
@@ -586,3 +587,46 @@ export const brands = [
   { name: "Farm Fresh", count: 24 },
   { name: "Imported", count: 18 },
 ]
+
+export async function fetchPublicProducts(): Promise<Product[]> {
+  try {
+    const { getApiBase } = await import("@/lib/api-url")
+    const API = getApiBase()
+    const response = await fetch(`${API}/products`, { cache: "no-store" })
+    if (!response.ok) return products
+    const remote = await response.json()
+    if (!Array.isArray(remote)) return products
+
+    const merged = new Map<string, Product>()
+    products.forEach((product) => merged.set(product.slug, product))
+
+    remote.forEach((item: Record<string, unknown>) => {
+      const type = item.type === "vegetable" ? "vegetable" : "fruit"
+      const name = String(item.name || "")
+      const slug = String(item.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))
+      if (!name || !slug) return
+      const mrp = Number(item.mrp) || Number(item.price) || 0
+      merged.set(slug, {
+        id: String(item.id || item._id || slug),
+        slug,
+        name,
+        brand: String(item.brand || "FreshBasket"),
+        weight: String(item.weight || ""),
+        price: Number(item.price) || 0,
+        mrp,
+        rating: Number(item.rating) || 0,
+        ratingCount: Number(item.ratingCount) || 0,
+        image: String(item.image || "/placeholder.svg"),
+        deliveryTime: String(item.deliveryTime || "Tomorrow 7AM"),
+        type,
+        category: String(item.category || (type === "fruit" ? "Fruit" : "Vegetable")),
+        description: String(item.description || ""),
+        inStock: item.inStock !== false,
+      })
+    })
+
+    return Array.from(merged.values())
+  } catch {
+    return products
+  }
+}

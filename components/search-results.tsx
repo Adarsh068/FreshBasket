@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { ProductGrid, sortProducts, type SortOption } from "@/components/product-grid"
-import { products } from "@/lib/products"
+import type { Product } from "@/lib/products"
 
 const SearchX = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -13,7 +13,7 @@ const SearchX = () => (
   </svg>
 )
 
-export function SearchResults({ query }: { query: string }) {
+export function SearchResults({ query, products }: { query: string; products: Product[] }) {
   const [sort, setSort] = useState<SortOption>("Popularity")
 
   const matches = useMemo(() => {

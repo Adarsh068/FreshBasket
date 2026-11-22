@@ -5,11 +5,12 @@ import { ProductCard } from "@/components/product-card"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { TopPromoBar } from "@/components/top-promo-bar"
-import { getProductBySlug, getProductsByType } from "@/lib/products"
+import { fetchPublicProducts } from "@/lib/products"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const catalog = await fetchPublicProducts()
+  const product = catalog.find((item) => item.slug === slug)
   if (!product) return { title: "Product not found | FreshBasket" }
   return {
     title: `${product.name} | FreshBasket`,
@@ -19,19 +20,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const catalog = await fetchPublicProducts()
+  const product = catalog.find((item) => item.slug === slug)
   if (!product) notFound()
 
   const typeLabel = product.type === "fruit" ? "Fresh Fruits" : "Fresh Vegetables"
   const typeHref = product.type === "fruit" ? "/fruits" : "/vegetables"
 
-  const related = getProductsByType(product.type)
+  const related = catalog.filter((item) => item.type === product.type)
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 4)
 
   // If not enough same-category items, fill with same-type items
   if (related.length < 4) {
-    const fillers = getProductsByType(product.type)
+    const fillers = catalog.filter((item) => item.type === product.type)
       .filter((p) => p.id !== product.id && !related.some((r) => r.id === p.id))
       .slice(0, 4 - related.length)
     related.push(...fillers)

@@ -6,12 +6,13 @@ import { ProductCard } from "@/components/product-card"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { TopPromoBar } from "@/components/top-promo-bar"
-import { getProductsByType } from "@/lib/products"
+import { fetchPublicProducts } from "@/lib/products"
 import { HomeSubscriptionSection } from "@/components/home-subscription-section"
 
-export default function HomePage() {
-  const fruits = getProductsByType("fruit").slice(0, 8)
-  const vegetables = getProductsByType("vegetable").slice(0, 8)
+export default async function HomePage() {
+  const catalog = await fetchPublicProducts()
+  const fruits = catalog.filter((product) => product.type === "fruit").slice(0, 8)
+  const vegetables = catalog.filter((product) => product.type === "vegetable").slice(0, 8)
 
   return (
     <main className="min-h-screen bg-background">
