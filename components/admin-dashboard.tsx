@@ -136,19 +136,30 @@ export function AdminDashboard() {
   async function addProduct() {
     if (!user) return
     if (!newProduct.name || !newProduct.price || !newProduct.mrp) { alert("Name, price and MRP required"); return }
+    if (!newProduct.image.trim()) { alert("Image URL is required"); return }
+    const image = newProduct.image.trim()
+    if (!image.startsWith("/") && !/^https?:\/\//i.test(image)) {
+      alert("Enter a valid image URL starting with http://, https://, or /")
+      return
+    }
     const slug = newProduct.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
     const id = "p" + Date.now()
-    await fetch(`${API}/products`, {
+    const response = await fetch(`${API}/products`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` },
       body: JSON.stringify({
-        ...newProduct, id, slug,
+        ...newProduct, image, id, slug,
         price: Number(newProduct.price),
         mrp: Number(newProduct.mrp),
         rating: 0, ratingCount: 0, inStock: true,
         deliveryTime: "Tomorrow 7AM", description: "",
       }),
     })
+    const data = await response.json().catch(() => null)
+    if (!response.ok) {
+      alert(data?.message || "Failed to add product")
+      return
+    }
     setShowAddProduct(false)
     setNewProduct(EMPTY_PRODUCT)
     fetchAll()
@@ -403,8 +414,21 @@ export function AdminDashboard() {
                   <span className="font-semibold">Image URL</span>
                   <input type="text" value={newProduct.image || ""}
                     onChange={e => setNewProduct(p => ({ ...p, image: e.target.value }))}
-                    placeholder="/your-image.jpg"
+                    placeholder="https://example.com/product.jpg"
                     className="h-9 rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+                  {newProduct.image.trim() && (
+                    <div className="mt-1 h-24 overflow-hidden rounded-md border border-border bg-muted/30">
+                      <img
+                        src={newProduct.image.trim()}
+                        alt="Product image preview"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null
+                          event.currentTarget.src = "/placeholder.svg"
+                        }}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
                 </label>
               </div>
               <div className="mt-4 flex gap-2">

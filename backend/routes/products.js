@@ -2,13 +2,13 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const { protect, adminOnly } = require("../middleware/auth");
-const { loadProducts } = require("../config/file-products");
+const { loadProducts, getAllProducts, createProduct, updateProduct, deleteProduct } = require("../config/file-products");
 
 // GET /api/products - get all products (with optional type filter)
 router.get("/", async (req, res) => {
   try {
     if (Product.db.readyState !== 1) {
-      let products = loadProducts();
+      let products = getAllProducts();
       if (req.query.type) {
         products = products.filter((product) => product.type === req.query.type);
       }
@@ -33,7 +33,7 @@ router.get("/search", async (req, res) => {
   try {
     if (Product.db.readyState !== 1) {
       const q = String(req.query.q || "").toLowerCase();
-      const products = loadProducts().filter((product) =>
+      const products = getAllProducts().filter((product) =>
         [product.name, product.category, product.brand]
           .some((value) => String(value).toLowerCase().includes(q))
       );
@@ -58,7 +58,7 @@ router.get("/search", async (req, res) => {
 router.get("/:slug", async (req, res) => {
   try {
     if (Product.db.readyState !== 1) {
-      const product = loadProducts().find((item) => item.slug === req.params.slug);
+      const product = getAllProducts().find((item) => item.slug === req.params.slug);
       if (!product) return res.status(404).json({ message: "Product not found" });
       return res.json(product);
     }
@@ -74,7 +74,12 @@ router.get("/:slug", async (req, res) => {
 // POST /api/products - admin only
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    if (!req.body.name || !req.body.slug || !req.body.image) {
+      return res.status(400).json({ message: "Product name, image and slug are required" });
+    }
+    const product = Product.db.readyState === 1
+      ? await Product.create(req.body)
+      : createProduct(req.body);
     res.status(201).json(product);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -84,7 +89,9 @@ router.post("/", protect, adminOnly, async (req, res) => {
 // PUT /api/products/:id - admin only
 router.put("/:id", protect, adminOnly, async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const product = Product.db.readyState === 1
+      ? await Product.findByIdAndUpdate(req.params.id, req.body, { new: true })
+      : updateProduct(req.params.id, req.body);
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
   } catch (err) {
@@ -95,7 +102,11 @@ router.put("/:id", protect, adminOnly, async (req, res) => {
 // DELETE /api/products/:id - admin only
 router.delete("/:id", protect, adminOnly, async (req, res) => {
   try {
-    await Product.findByIdAndDelete(req.params.id);
+    if (Product.db.readyState === 1) {
+      await Product.findByIdAndDelete(req.params.id);
+    } else if (!deleteProduct(req.params.id)) {
+      return res.status(404).json({ message: "Product not found" });
+    }
     res.json({ message: "Product deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

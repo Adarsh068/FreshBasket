@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Clock, Plus, Star } from "lucide-react"
@@ -41,12 +40,14 @@ export function ProductCard({ product }: { product: Product }) {
       )}
 
       <Link href={`/product/${product.slug}`} className="relative aspect-square overflow-hidden bg-muted/30" aria-label={product.name}>
-        <Image
+        <img
           src={product.image || "/placeholder.svg"}
           alt={product.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className={`object-cover transition-transform group-hover:scale-105 ${!inStock ? "opacity-50" : ""}`}
+          onError={(event) => {
+            event.currentTarget.onerror = null
+            event.currentTarget.src = "/placeholder.svg"
+          }}
+          className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${!inStock ? "opacity-50" : ""}`}
         />
       </Link>
 

@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { Clock, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
@@ -21,13 +20,14 @@ export function ProductDetail({ product }: { product: Product }) {
               {discount}% OFF
             </span>
           )}
-          <Image
+          <img
             src={product.image || "/placeholder.svg"}
             alt={product.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 600px"
-            className="object-cover"
-            priority
+            onError={(event) => {
+              event.currentTarget.onerror = null
+              event.currentTarget.src = "/placeholder.svg"
+            }}
+            className="h-full w-full object-cover"
           />
         </div>
 
