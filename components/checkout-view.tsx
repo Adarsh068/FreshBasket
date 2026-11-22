@@ -214,7 +214,7 @@ export function CheckoutView() {
               description="Pay with cash or UPI when your order arrives"
             />
             <PaymentRadio
-              checked={payment === "upi"}
+              checked={false}
               onChange={() => {}}
               label="UPI"
               description="Pay using any UPI app — GPay, PhonePe, Paytm"
@@ -222,7 +222,7 @@ export function CheckoutView() {
               badge="Coming Soon"
             />
             <PaymentRadio
-              checked={payment === "card"}
+              checked={false}
               onChange={() => {}}
               label="Credit / Debit Card"
               description="Secure card payment"
