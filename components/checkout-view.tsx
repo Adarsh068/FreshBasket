@@ -103,6 +103,10 @@ export function CheckoutView() {
       setError("Please login again to place your order.")
       return
     }
+    if (payment !== "cod") {
+      setError("UPI and card payments are coming soon. Please choose Cash on Delivery.")
+      return
+    }
     setSubmitting(true)
     const form = e.currentTarget
     const fd = new FormData(form)
@@ -211,15 +215,19 @@ export function CheckoutView() {
             />
             <PaymentRadio
               checked={payment === "upi"}
-              onChange={() => setPayment("upi")}
+              onChange={() => {}}
               label="UPI"
               description="Pay using any UPI app — GPay, PhonePe, Paytm"
+              disabled
+              badge="Coming Soon"
             />
             <PaymentRadio
               checked={payment === "card"}
-              onChange={() => setPayment("card")}
+              onChange={() => {}}
               label="Credit / Debit Card"
               description="Secure card payment"
+              disabled
+              badge="Coming Soon"
             />
           </div>
         </div>
@@ -293,21 +301,44 @@ function PaymentRadio({
   onChange,
   label,
   description,
+  disabled = false,
+  badge,
 }: {
   checked: boolean
   onChange: () => void
   label: string
   description: string
+  disabled?: boolean
+  badge?: string
 }) {
   return (
     <label
-      className={`flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3 transition-colors ${
-        checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/40"
+      className={`flex items-start gap-3 rounded-md border px-4 py-3 transition-colors ${
+        disabled
+          ? "cursor-not-allowed border-border bg-muted/40 opacity-60"
+          : checked
+            ? "cursor-pointer border-primary bg-primary/5"
+            : "cursor-pointer border-border bg-card hover:border-primary/40"
       }`}
+      aria-disabled={disabled}
     >
-      <input type="radio" name="payment" checked={checked} onChange={onChange} className="mt-1 accent-primary" />
+      <input
+        type="radio"
+        name="payment"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="mt-1 accent-primary disabled:cursor-not-allowed"
+      />
       <div>
-        <p className="text-sm font-semibold">{label}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-semibold">{label}</p>
+          {badge && (
+            <span className="rounded-full border border-muted-foreground/20 bg-muted px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+              {badge}
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
     </label>

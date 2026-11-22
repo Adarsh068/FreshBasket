@@ -17,7 +17,7 @@ const orderSchema = new mongoose.Schema(
     address: { type: String, required: true },
     city: { type: String, required: true },
     pincode: { type: String, required: true },
-    payment: { type: String, enum: ["cod", "upi", "card"], required: true },
+    payment: { type: String, enum: ["cod"], required: true },
     items: [orderItemSchema],
     subtotal: { type: Number, required: true },
     deliveryFee: { type: Number, required: true },

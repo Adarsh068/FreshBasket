@@ -15,8 +15,8 @@ router.post("/", protect, async (req, res) => {
     if (!address || !city || !pincode || !payment) {
       return res.status(400).json({ message: "Address, city, pincode and payment method are required" });
     }
-    if (!["cod", "upi", "card"].includes(payment)) {
-      return res.status(400).json({ message: "Invalid payment method" });
+    if (payment !== "cod") {
+      return res.status(400).json({ message: "UPI and card payments are coming soon. Please use Cash on Delivery" });
     }
     if (!/^[0-9]{6}$/.test(String(pincode || ""))) {
       return res.status(400).json({ message: "Enter a valid 6-digit pincode" });
