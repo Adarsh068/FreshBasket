@@ -112,14 +112,17 @@ export function loadSubscriptions(): SubscriptionRecord[] {
   return safeParse<SubscriptionRecord[]>(localStorage.getItem(SUBS_KEY), [])
 }
 
-export async function saveSubscription(sub: SubscriptionRecord) {
+export async function saveSubscription(sub: SubscriptionRecord, token?: string) {
   // Save to MongoDB
   try {
     const { getApiBase } = await import("@/lib/api-url")
     const API = getApiBase()
     await fetch(`${API}/subscriptions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         planId: sub.planId,
         planName: sub.planName,

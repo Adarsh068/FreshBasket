@@ -12,6 +12,7 @@ const subscriptionSchema = new mongoose.Schema(
     phone: { type: String, required: true },
     address: { type: String, required: true },
     startDate: { type: String, required: true },
+    userEmail: { type: String, default: null },
     status: {
       type: String,
       enum: ["active", "paused", "cancelled"],

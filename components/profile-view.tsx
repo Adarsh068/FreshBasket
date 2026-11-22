@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { LogOut, User, ShoppingBag, Package, ChevronDown, ChevronUp } from "lucide-react"
+import { LogOut, User, ShoppingBag, Package, ChevronDown, ChevronUp, CalendarDays } from "lucide-react"
 
 import { getApiBase } from "@/lib/api-url"
 const API = getApiBase()
@@ -24,6 +24,20 @@ type Order = {
   items: OrderItem[]
 }
 
+type Subscription = {
+  subscriptionId: string
+  planName: string
+  category: "fruits" | "vegetables" | "combo"
+  frequency: "daily" | "weekly" | "monthly"
+  price: number
+  customerName: string
+  phone: string
+  address: string
+  startDate: string
+  status: "active" | "paused" | "cancelled"
+  createdAt: string
+}
+
 const STATUS_COLOR: Record<string, string> = {
   placed: "bg-blue-100 text-blue-700",
   "out-for-delivery": "bg-yellow-100 text-yellow-700",
@@ -35,8 +49,12 @@ export function ProfileView() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [expandedSubscription, setExpandedSubscription] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<"orders" | "subscriptions">("orders")
 
   // Redirect if not logged in
   useEffect(() => {
@@ -54,6 +72,18 @@ export function ProfileView() {
       .then((data) => setOrders(Array.isArray(data) ? data : []))
       .catch(() => setOrders([]))
       .finally(() => setLoadingOrders(false))
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    setLoadingSubscriptions(true)
+    fetch(`${API}/subscriptions/user/mine`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setSubscriptions(Array.isArray(data) ? data : []))
+      .catch(() => setSubscriptions([]))
+      .finally(() => setLoadingSubscriptions(false))
   }, [user])
 
   function handleLogout() {
@@ -113,26 +143,55 @@ export function ProfileView() {
         </div>
       </div>
 
+      {/* Orders / subscriptions switch */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => setActiveView("orders")}
+          className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition-colors ${
+            activeView === "orders"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card hover:border-primary/40"
+          }`}
+        >
+          <ShoppingBag className="h-4 w-4" />
+          My Orders
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveView("subscriptions")}
+          className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition-colors ${
+            activeView === "subscriptions"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card hover:border-primary/40"
+          }`}
+        >
+          <CalendarDays className="h-4 w-4" />
+          My Subscriptions
+        </button>
+      </div>
+
       {/* Orders list */}
-      <div>
-        <h2 className="mb-3 text-lg font-bold">My Orders</h2>
+      {activeView === "orders" && (
+        <div>
+          <h2 className="mb-3 text-lg font-bold">My Orders</h2>
 
-        {loadingOrders && (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            Loading orders...
-          </div>
-        )}
+          {loadingOrders && (
+            <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              Loading orders...
+            </div>
+          )}
 
-        {!loadingOrders && orders.length === 0 && (
-          <div className="rounded-xl border border-border bg-card p-10 text-center">
-            <ShoppingBag className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
-            <p className="font-semibold">No orders yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Start shopping to see your orders here.</p>
-          </div>
-        )}
+          {!loadingOrders && orders.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-10 text-center">
+              <ShoppingBag className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="font-semibold">No orders yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Start shopping to see your orders here.</p>
+            </div>
+          )}
 
-        <div className="space-y-3">
-          {orders.map((order) => (
+          <div className="space-y-3">
+            {orders.map((order) => (
             <div key={order.orderId} className="rounded-xl border border-border bg-card overflow-hidden">
               {/* Order header */}
               <button
@@ -189,9 +248,94 @@ export function ProfileView() {
                 </div>
               )}
             </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Subscriptions list */}
+      {activeView === "subscriptions" && (
+        <div>
+          <h2 className="mb-3 text-lg font-bold">My Subscriptions</h2>
+
+          {loadingSubscriptions && (
+            <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              Loading subscriptions...
+            </div>
+          )}
+
+          {!loadingSubscriptions && subscriptions.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-10 text-center">
+              <CalendarDays className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="font-semibold">No subscriptions yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Subscribe to a fresh produce plan to see it here.</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {subscriptions.map((subscription) => (
+              <div key={subscription.subscriptionId} className="overflow-hidden rounded-xl border border-border bg-card">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedSubscription(
+                      expandedSubscription === subscription.subscriptionId ? null : subscription.subscriptionId,
+                    )
+                  }
+                  className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">#{subscription.subscriptionId}</p>
+                    <p className="text-xs text-muted-foreground">{subscription.planName}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
+                        subscription.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : subscription.status === "paused"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {subscription.status}
+                    </span>
+                    <span className="text-sm font-bold">
+                      ₹{subscription.price}/{subscription.frequency === "daily" ? "day" : subscription.frequency === "weekly" ? "week" : "month"}
+                    </span>
+                    {expandedSubscription === subscription.subscriptionId ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+
+                {expandedSubscription === subscription.subscriptionId && (
+                  <div className="grid grid-cols-2 gap-1 border-t border-border p-4 text-xs text-muted-foreground">
+                    <span>Category</span>
+                    <span className="text-right capitalize">{subscription.category}</span>
+                    <span>Frequency</span>
+                    <span className="text-right capitalize">{subscription.frequency}</span>
+                    <span>Start date</span>
+                    <span className="text-right">
+                      {new Date(subscription.startDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span>Phone</span>
+                    <span className="text-right">{subscription.phone}</span>
+                    <span>Address</span>
+                    <span className="text-right">{subscription.address}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

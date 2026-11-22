@@ -30,4 +30,10 @@ function createSubscription(subscription) {
   return created;
 }
 
-module.exports = { readSubscriptions, createSubscription };
+function findByUserEmail(email) {
+  return readSubscriptions()
+    .filter((subscription) => subscription.userEmail === String(email).toLowerCase())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+module.exports = { readSubscriptions, createSubscription, findByUserEmail };

@@ -5,8 +5,10 @@ import { useState } from "react"
 import { Calendar, CheckCircle2 } from "lucide-react"
 import type { SubscriptionPlan } from "@/lib/subscription-plans"
 import { saveSubscription } from "@/lib/store"
+import { useAuth } from "@/lib/auth-context"
 
 export function SubscribeForm({ plan }: { plan: SubscriptionPlan }) {
+  const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [confirmedId, setConfirmedId] = useState<string | null>(null)
   const frequencyLabel = plan.frequency === "daily" ? "/day" : plan.frequency === "weekly" ? "/week" : "/month"
@@ -34,7 +36,7 @@ export function SubscribeForm({ plan }: { plan: SubscriptionPlan }) {
         startDate: String(fd.get("startDate") || tomorrow),
         status: "active",
         createdAt: Date.now(),
-      })
+      }, user?.token)
       setConfirmedId(id)
       setSubmitting(false)
     }, 700)

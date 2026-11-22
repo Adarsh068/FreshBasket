@@ -4,6 +4,9 @@ const Subscription = require("../models/Subscription");
 const { protect, adminOnly } = require("../middleware/auth");
 const { sendSubscriptionConfirmation } = require("../utils/whatsapp");
 const fileSubscriptions = require("../config/file-subscriptions");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const fileUsers = require("../config/file-users");
 
 // POST /api/subscriptions - create (public)
 router.post("/", async (req, res) => {
@@ -11,11 +14,22 @@ router.post("/", async (req, res) => {
     console.log("=== SUBSCRIPTION POST HIT ===")
     console.log("Body:", JSON.stringify(req.body))
     const subscriptionId = "SUB" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    let userEmail = null;
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith("Bearer")) {
+      try {
+        const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET);
+        const user = User.db.readyState === 1
+          ? await User.findById(decoded.id).select("-password")
+          : await fileUsers.findById(decoded.id);
+        if (user) userEmail = user.email;
+      } catch {}
+    }
     let sub;
     if (Subscription.db.readyState === 1) {
-      sub = await Subscription.create({ ...req.body, subscriptionId });
+      sub = await Subscription.create({ ...req.body, subscriptionId, userEmail });
     } else {
-      sub = fileSubscriptions.createSubscription({ ...req.body, subscriptionId });
+      sub = fileSubscriptions.createSubscription({ ...req.body, subscriptionId, userEmail });
     }
 
     // ✅ Send WhatsApp - phone comes directly from subscription form
@@ -33,6 +47,18 @@ router.post("/", async (req, res) => {
     res.status(201).json(sub);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// GET /api/subscriptions/user/mine - logged-in user sees their subscriptions
+router.get("/user/mine", protect, async (req, res) => {
+  try {
+    const subs = Subscription.db.readyState === 1
+      ? await Subscription.find({ userEmail: req.user.email }).sort({ createdAt: -1 })
+      : fileSubscriptions.findByUserEmail(req.user.email);
+    res.json(subs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
